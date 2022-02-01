@@ -1,6 +1,14 @@
 import { Box, Tooltip } from "@chakra-ui/react";
 import { useCallback, useMemo, useState } from "react";
-import { createEditor, Editor, Path, Range, Text, Transforms } from "slate";
+import {
+  createEditor,
+  Editor,
+  Node,
+  Path,
+  Range,
+  Text,
+  Transforms,
+} from "slate";
 import { Editable, ReactEditor, Slate, withReact } from "slate-react";
 import { withHistory } from "slate-history";
 import { Leaf } from "../Leaf";
@@ -72,8 +80,8 @@ const RichTextEditor = () => {
                 type: "tooltip",
                 children: [{ text: "hello World" }],
               };
-              Transforms.insertFragment(editor, mention);
-              Transforms.move(editor);
+              Node.fragment(editor, mention);
+              console.log(editor);
               // Transforms.setNodes(
               //   editor,
               //   { type: "tooltip" },
