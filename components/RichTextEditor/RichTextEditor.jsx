@@ -2,16 +2,11 @@ import { Box, Tooltip } from "@chakra-ui/react";
 import { useCallback, useMemo, useState } from "react";
 import {
   createEditor,
-  Editor,
   Node,
-  Path,
-  Range,
   Text,
-  Transforms,
 } from "slate";
 import { Editable, ReactEditor, Slate, withReact } from "slate-react";
 import { withHistory } from "slate-history";
-import { Leaf } from "../Leaf";
 import styles from "./RichTextEditor.module.css";
 
 const withTrackingLink = (editor) => {
@@ -33,10 +28,10 @@ const RichTextEditor = () => {
   const [value, setValue] = useState([
     {
       type: "paragraph",
-      children: [{ text: "A line of text in a paragraph." }],
+      children: [{ text: "" }],
     },
   ]);
-  const [tracking_link] = useState("{{TRAKING_LINK}}");
+  const [tracking_link] = useState("{{TRACKING_LINK}}");
 
   const renderElement = useCallback((props) => {
     switch (props.element.type) {
@@ -47,19 +42,34 @@ const RichTextEditor = () => {
     }
   }, []);
 
-  // const handleKeyUp = (event) => {
-  //   const regex = new RegExp(/{{TRACKING_LINK}}/g);
-  //   if (event.key === "`" && event.ctrlKey) {
-  //     // Prevent the "`" from being inserted by default.
-  //     event.preventDefault();
-  //     // Otherwise, set the currently selected blocks type to "code".
-  //     Transforms.setNodes(
-  //       editor,
-  //       { type: "tooltip" },
-  //       { match: (n) => Editor.isBlock(editor, n) }
-  //     );
-  //   }
-  // };
+  const decorate = useCallback(
+    ([node, path]) => {
+      const ranges = []
+
+      if (Text.isText(node)) {
+        const { text } = node
+        const parts = text.split(tracking_link)
+        console.log(parts);
+        let offset = 0
+
+        parts.forEach((part, i) => {
+          if (i !== 0) {
+            ranges.push({
+              anchor: { path, offset: offset - tracking_link.length },
+              focus: { path, offset },
+              tooltip: true,
+            })
+          }
+
+          offset = offset + part.length + tracking_link.length
+        })
+      }
+      console.log(ranges);
+
+      return ranges
+    },
+    []
+  );
 
   return (
     <Box className={styles.container}>
@@ -68,38 +78,24 @@ const RichTextEditor = () => {
         value={value}
         onChange={(value) => setValue(value)}>
         <Editable
-          renderElement={renderElement}
+          decorate={decorate}
           renderLeaf={(props) => <Leaf {...props} />}
           className={styles.editor}
-          onKeyDown={(event) => {
-            if (event.key === "`" && event.ctrlKey) {
-              // Prevent the "`" from being inserted by default.
-              event.preventDefault();
-              // Otherwise, set the currently selected blocks type to "code".
-              const mention = {
-                type: "tooltip",
-                children: [{ text: "hello World" }],
-              };
-              Node.fragment(editor, mention);
-              console.log(editor);
-              // Transforms.setNodes(
-              //   editor,
-              //   { type: "tooltip" },
-              //   {
-              //     match: (n) => {
-              //       if (n.text) {
-              //         console.log(n.text);
-              //         console.log(tracking_link);
-              //       }
-              //     },
-              //   }
-              // );
-            }
-          }}
         />
       </Slate>
     </Box>
   );
+};
+
+const Leaf = ({ attributes, children, leaf }) => {
+  if (leaf.tooltip) {
+    return (
+      <Tooltip {...attributes}>
+        {children}
+      </Tooltip>
+    )
+  }
+  return <span {...attributes}>{children}</span>
 };
 
 const TooltipElement = (props) => {
